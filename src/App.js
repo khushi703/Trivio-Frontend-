@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, Link } from "react-router-do
 import Home from "./pages/home";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
+import QuizPage from "./pages/quizPage";  // Import the new Quiz Page component
 
 const Navbar = () => {
     const location = useLocation();
@@ -28,6 +29,7 @@ const App = () => {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/quiz/:quizName" element={<QuizPage />} />  {/* Route for quizzes */}
             </Routes>
         </BrowserRouter>
     );

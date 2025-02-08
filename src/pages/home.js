@@ -52,12 +52,19 @@ const Home = () => {
         setView("addQuestions");
     };
 
-    // Generate QR Code
     const generateQRCode = () => {
-        const link = `https://trivio.com/quiz/${encodeURIComponent(quizName)}`;
+        if (!quizName.trim()) {
+            alert("Please enter a quiz name before generating a QR code.");
+            return;
+        }
+        
+        // Encode the quiz name or use a unique ID if available
+        const link = `https://trivio-git-master-omunadkat004s-projects.vercel.app/quiz/${encodeURIComponent(quizName)}`;
+        
         setQRCodeData(link);
         setView("qrCode");
     };
+    
 
     return (
         <div className="app-container">
