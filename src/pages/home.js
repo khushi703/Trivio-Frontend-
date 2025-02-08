@@ -7,8 +7,9 @@ const Home = () => {
     const [quizName, setQuizName] = useState("");
     const [time, setTime] = useState("");
     const [questions, setQuestions] = useState([]);
-    const [quizzes, setQuizzes] = useState([]); // Stores created quizzes
+    const [quizzes, setQuizzes] = useState([]);
     const [qrCodeData, setQRCodeData] = useState("");
+    const [quizStarted, setQuizStarted] = useState(false);
 
     // Handle adding a new question
     const addQuestion = () => {
@@ -17,11 +18,13 @@ const Home = () => {
 
     // Add a new option to a question
     const addOption = (index) => {
-        let newQuestions = [...questions];
-        if (newQuestions[index].options.length < 6) {
-            newQuestions[index].options.push("");
-            setQuestions(newQuestions);
-        }
+        setQuestions((prevQuestions) => {
+            const updatedQuestions = [...prevQuestions];
+            if (updatedQuestions[index].options.length < 6) {
+                updatedQuestions[index].options.push("");
+            }
+            return updatedQuestions;
+        });
     };
 
     // Save the quiz and update the sidebar
@@ -37,7 +40,7 @@ const Home = () => {
             questions: questions,
         };
 
-        setQuizzes([...quizzes, newQuiz]); // Add quiz to sidebar
+        setQuizzes([...quizzes, newQuiz]);
         setQuizName("");
         setTime("");
         setQuestions([]);
@@ -52,19 +55,24 @@ const Home = () => {
         setView("addQuestions");
     };
 
+    // Generate QR Code
     const generateQRCode = () => {
         if (!quizName.trim()) {
             alert("Please enter a quiz name before generating a QR code.");
             return;
         }
-        
-        // Encode the quiz name or use a unique ID if available
+
         const link = `https://trivio-git-master-omunadkat004s-projects.vercel.app/quiz/${encodeURIComponent(quizName)}`;
-        
         setQRCodeData(link);
         setView("qrCode");
     };
-    
+
+    // Start the quiz (temporary using localStorage, will be replaced with backend logic)
+    const startQuiz = () => {
+        setQuizStarted(true);
+        localStorage.setItem("quizStarted", "true");
+        alert("Quiz has started!");
+    };
 
     return (
         <div className="app-container">
@@ -114,24 +122,30 @@ const Home = () => {
                         {questions.map((q, index) => (
                             <div key={index} className="question-box">
                                 <input type="text" placeholder="Enter Question" value={q.question} onChange={(e) => {
-                                    let newQuestions = [...questions];
-                                    newQuestions[index].question = e.target.value;
-                                    setQuestions(newQuestions);
+                                    setQuestions((prevQuestions) => {
+                                        const updatedQuestions = [...prevQuestions];
+                                        updatedQuestions[index].question = e.target.value;
+                                        return updatedQuestions;
+                                    });
                                 }} />
                                 {q.options.map((option, i) => (
                                     <div key={i} className="option-group">
                                         <input type="radio" name={`correct-${index}`}
-                                               checked={q.correct === option}
-                                               onChange={() => {
-                                                   let newQuestions = [...questions];
-                                                   newQuestions[index].correct = option;
-                                                   setQuestions(newQuestions);
-                                               }}
+                                            checked={q.correct === option}
+                                            onChange={() => {
+                                                setQuestions((prevQuestions) => {
+                                                    const updatedQuestions = [...prevQuestions];
+                                                    updatedQuestions[index].correct = option;
+                                                    return updatedQuestions;
+                                                });
+                                            }}
                                         />
                                         <input type="text" placeholder={`Option ${i + 1}`} value={option} onChange={(e) => {
-                                            let newQuestions = [...questions];
-                                            newQuestions[index].options[i] = e.target.value;
-                                            setQuestions(newQuestions);
+                                            setQuestions((prevQuestions) => {
+                                                const updatedQuestions = [...prevQuestions];
+                                                updatedQuestions[index].options[i] = e.target.value;
+                                                return updatedQuestions;
+                                            });
                                         }} />
                                     </div>
                                 ))}
@@ -141,6 +155,7 @@ const Home = () => {
                         <button onClick={addQuestion}>Add Question</button>
                         <button onClick={saveQuiz}>Save Quiz</button>
                         <button onClick={generateQRCode}>Generate QR Code</button>
+                        <button onClick={startQuiz}>Start Quiz</button>
                     </div>
                 )}
 
