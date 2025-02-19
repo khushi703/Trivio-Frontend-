@@ -11,6 +11,8 @@ const QuizPage = () => {
     const [selectedOption, setSelectedOption] = useState("");
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
+    const [timeUp, setTimeUp] = useState(false); // New state to track time-up condition
+    const [submitted, setSubmitted] = useState(false); // New state to track submission
 
     const handleJoin = () => {
         if (!participantName.trim()) {
@@ -23,21 +25,25 @@ const QuizPage = () => {
     };
 
     const fetchQuizData = () => {
+        const activeQuizName = localStorage.getItem("activeQuizName");
+
         const quizzes = JSON.parse(localStorage.getItem("quizzes")) || [];
         console.log("Stored Quizzes:", quizzes);
-        console.log("Quiz Name from URL:", decodeURIComponent(quizName));
+        console.log("Quiz Name from URL:", decodeURIComponent(activeQuizName));
 
-        const quiz = quizzes.find(q => q.name === decodeURIComponent(quizName));
+        const quiz = quizzes.find(q => q.name === decodeURIComponent(activeQuizName));
         if (quiz) {
             setQuizData(quiz);
-            setTimeLeft(quiz.time);
         } else {
             console.error("Quiz not found!");
         }
     };
 
     useEffect(() => {
-        // Poll for quiz start
+        fetchQuizData(); 
+    }, []);
+
+    useEffect(() => {
         const interval = setInterval(() => {
             const isStarted = localStorage.getItem("quizStarted") === "true";
             console.log("Quiz started status:", isStarted);
@@ -47,17 +53,52 @@ const QuizPage = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const handleNextQuestion = () => {
-        if (selectedOption === quizData.questions[currentQuestionIndex].correct) {
-            setScore(prevScore => prevScore + 1);
-        }
-        setSelectedOption("");
+    useEffect(() => {
+        if (quizStarted && quizData) {
+            setTimeLeft(parseInt(quizData.time, 10)); // Initialize timeLeft with the quiz time
 
-        if (currentQuestionIndex < quizData.questions.length - 1) {
-            setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+            const timerInterval = setInterval(() => {
+                setTimeLeft((prevTime) => {
+                    if (prevTime > 0) {
+                        return prevTime - 1;
+                    } else {
+                        clearInterval(timerInterval);
+                        setTimeUp(true); // Set timeUp to true when the timer reaches 0
+                        if (selectedOption) {
+                            alert("Yes, your response is stored!");
+                        } else {
+                            alert("Time Up!");
+                        }
+
+                        return 0;
+                    }
+                });
+            }, 1000);
+
+            return () => clearInterval(timerInterval); // Cleanup the interval
+        }
+    }, [quizStarted, quizData]);
+
+    const handleNextQuestion = () => {
+        // Only process if time hasn't run out or an option has been selected
+        if (!timeUp || selectedOption) {
+            if (selectedOption === quizData.questions[currentQuestionIndex].correct) {
+                setScore(prevScore => prevScore + 1);
+            }
+
+            setSelectedOption("");
+            setTimeUp(false);
+            setSubmitted(true);
+
+            if (currentQuestionIndex < quizData.questions.length - 1) {
+                setCurrentQuestionIndex(prevIndex => prevIndex + 1);
+                setTimeLeft(parseInt(quizData.time, 10));  // Reset time for next question
+            } else {
+                alert(`Quiz ended! Your final score is ${score + (selectedOption === quizData.questions[currentQuestionIndex].correct ? 1 : 0)}`);
+                setQuizStarted(false);
+            }
         } else {
-            alert(`Quiz ended! Your final score is ${score + (selectedOption === quizData.questions[currentQuestionIndex].correct ? 1 : 0)}`);
-            setQuizStarted(false);
+            alert("Time's up!  You didn't select an option.");
         }
     };
 
@@ -68,11 +109,11 @@ const QuizPage = () => {
     if (waiting) {
         return (
             <div>
-                <input 
-                    type="text" 
-                    placeholder="Enter Your Name" 
-                    value={participantName} 
-                    onChange={(e) => setParticipantName(e.target.value)} 
+                <input
+                    type="text"
+                    placeholder="Enter Your Name"
+                    value={participantName}
+                    onChange={(e) => setParticipantName(e.target.value)}
                 />
                 <button onClick={handleJoin}>Join Quiz</button>
             </div>
@@ -97,19 +138,24 @@ const QuizPage = () => {
                         <div className="options">
                             {quizData.questions[currentQuestionIndex].options.map((option, index) => (
                                 <div key={index} className="option">
-                                    <input 
-                                        type="radio" 
-                                        name="option" 
-                                        value={option} 
+                                    <input
+                                        type="radio"
+                                        name="option"
+                                        value={option}
                                         checked={selectedOption === option}
                                         onChange={() => handleOptionSelect(option)}
+                                        disabled={timeUp} // Disable options when the timer is up
                                     />
                                     {option}
                                 </div>
                             ))}
                         </div>
                         <p>Time left: {timeLeft} seconds</p>
-                        <button onClick={handleNextQuestion}>Next Question</button>
+                        {timeUp && !selectedOption && <p>Time is up!</p>}
+                        <button onClick={handleNextQuestion} disabled={timeUp && !selectedOption}>
+                            Next Question
+                        </button>
+                        {submitted && <p>Your last answer has been submitted!</p>}
                     </div>
                 </div>
             )}

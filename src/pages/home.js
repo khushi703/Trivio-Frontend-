@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import "./home.css"; // Your CSS styles
 
@@ -10,6 +10,14 @@ const Home = () => {
     const [quizzes, setQuizzes] = useState([]);
     const [qrCodeData, setQRCodeData] = useState("");
     const [quizStarted, setQuizStarted] = useState(false);
+
+    // Load quizzes from local storage when the component mounts
+    useEffect(() => {
+        const storedQuizzes = localStorage.getItem("quizzes");
+        if (storedQuizzes) {
+            setQuizzes(JSON.parse(storedQuizzes));
+        }
+    }, []);
 
     // Handle adding a new question
     const addQuestion = () => {
@@ -40,7 +48,12 @@ const Home = () => {
             questions: questions,
         };
 
-        setQuizzes([...quizzes, newQuiz]);
+        const updatedQuizzes = [...quizzes, newQuiz]; // Create new array
+        setQuizzes(updatedQuizzes);
+
+        // Store the quizzes in localStorage. IMPORTANT: Stringify the array!
+        localStorage.setItem("quizzes", JSON.stringify(updatedQuizzes));
+
         setQuizName("");
         setTime("");
         setQuestions([]);
@@ -71,6 +84,8 @@ const Home = () => {
     const startQuiz = () => {
         setQuizStarted(true);
         localStorage.setItem("quizStarted", "true");
+        // Also store the name of the quiz being started (optional, but good practice)
+        localStorage.setItem("activeQuizName", quizName);
         alert("Quiz has started!");
     };
 
